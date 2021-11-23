@@ -93,7 +93,7 @@ def extract_feats(model):
     model.eval()
     preprocessing_func = get_preprocessing_pipelines()['test']
     data = preprocessing_func(np.load(args.mouth_patch_path)['data'])  # data: TxHxW
-    return model(torch.FloatTensor(data)[None, None, :, :, :].cuda(), lengths=[data.shape[0]])
+    return model(torch.FloatTensor(data)[None, None, :, :, :], lengths=[data.shape[0]])
 
 
 def evaluate(model, dset_loader, criterion):
@@ -105,11 +105,11 @@ def evaluate(model, dset_loader, criterion):
 
     with torch.no_grad():
         for batch_idx, (input, lengths, labels) in enumerate(tqdm(dset_loader)):
-            logits = model(input.unsqueeze(1).cuda(), lengths=lengths)
+            logits = model(input.unsqueeze(1), lengths=lengths)
             _, preds = torch.max(F.softmax(logits, dim=1).data, dim=1)
-            running_corrects += preds.eq(labels.cuda().view_as(preds)).sum().item()
+            running_corrects += preds.eq(labels.view_as(preds)).sum().item()
 
-            loss = criterion(logits, labels.cuda())
+            loss = criterion(logits, labels)
             running_loss += loss.item() * input.size(0)
 
     print('{} in total\tCR: {}'.format( len(dset_loader.dataset), running_corrects/len(dset_loader.dataset)))
@@ -138,11 +138,11 @@ def train(model, dset_loader, criterion, epoch, optimizer, logger):
 
         # --
         input, labels_a, labels_b, lam = mixup_data(input, labels, args.alpha)
-        labels_a, labels_b = labels_a.cuda(), labels_b.cuda()
+        labels_a, labels_b = labels_a, labels_b
 
         optimizer.zero_grad()
 
-        logits = model(input.unsqueeze(1).cuda(), lengths=lengths)
+        logits = model(input.unsqueeze(1), lengths=lengths)
 
         loss_func = mixup_criterion(labels_a, labels_b, lam)
         loss = loss_func(criterion, logits)
@@ -184,7 +184,7 @@ def get_model_from_json():
                         backbone_type=args.backbone_type,
                         relu_type=args.relu_type,
                         width_mult=args.width_mult,
-                        extract_feats=args.extract_feats).cuda()
+                        extract_feats=args.extract_feats)
     calculateNorm2(model)
     return model
 
