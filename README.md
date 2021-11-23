@@ -11,22 +11,23 @@
 
 ## Content
 [Deep Lipreading](#deep-lipreading)
-- [Introduction](#introduction)
-- [Preprocessing](#preprocessing)
-- [How to install the environment](#how-to-install-environment)
-- [How to prepare the dataset](#how-to-prepare-dataset)
-- [How to train](#how-to-train)
-- [How to test](#how-to-test)
-- [How to extract embeddings](#how-to-extract-embeddings)
-
-[Model Zoo](#model-zoo)
-
-[Citation](#citation)
-
-[License](#license)
-
-[Contact](#contact)
-
+- [Lipreading using Temporal Convolutional Networks](#lipreading-using-temporal-convolutional-networks)
+  - [Authors](#authors)
+  - [Update](#update)
+  - [Content](#content)
+  - [Deep Lipreading](#deep-lipreading)
+    - [Introduction](#introduction)
+    - [Preprocessing](#preprocessing)
+    - [How to install environment](#how-to-install-environment)
+    - [How to prepare dataset](#how-to-prepare-dataset)
+    - [How to train](#how-to-train)
+    - [How to test](#how-to-test)
+    - [How to extract embeddings](#how-to-extract-embeddings)
+    - [Model Zoo](#model-zoo)
+  - [Citation](#citation)
+  - [License](#license)
+  - [Contact](#contact)
+  - [Behnam Added](#behnam-added)
 
 
 ## Deep Lipreading
@@ -183,3 +184,21 @@ It is noted that the code can only be used for comparative or benchmarking purpo
 ```
 [Pingchuan Ma](pingchuan.ma16[at]imperial.ac.uk)
 ```
+
+## Behnam Added
+Steps for test with new data:
+- make sure new packages listed in `requirements.txt` are installed.
+  ```
+  pip3 install -r requirements.txt 
+  ```
+- download `lrw_resnet18_mstcn_adamw_s3.pth.tar` model and put it in `models`
+- copy videos into `data` like `data/sefr/test/44_1272021_40_0_F_1.avi`
+- add data list in a csv file in `preprocessing` folder like `3files.csv` according to `data` folder
+- run bellow code to extract landmarks and make RIO nzp files:
+  ```
+  python3 preprocessing/crop_mouth_from_video.py \
+          --video-direc data/ \
+          --landmark-direc landmarks/ \
+          --filename-path preprocessing/3files.csv \
+          --save-direc datasets/visual_data/
+  ```

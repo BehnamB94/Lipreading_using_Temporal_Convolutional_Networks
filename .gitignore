@@ -1,3 +1,9 @@
+*.xml
+*.yaml
+*.avi
+*.mp4
+*.npz
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

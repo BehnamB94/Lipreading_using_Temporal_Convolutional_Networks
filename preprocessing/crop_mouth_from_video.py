@@ -12,6 +12,7 @@ import glob
 import argparse
 import numpy as np
 from collections import deque
+from facial_landmarks import get_landmarks
 
 from utils import *
 from transform import *
@@ -25,7 +26,7 @@ def load_args(default_config=None):
     parser.add_argument('--filename-path', default='./lrw500_detected_face.csv', help='list of detected video and its subject ID')
     parser.add_argument('--save-direc', default=None, help='the directory of saving mouth ROIs')
     # -- mean face utils
-    parser.add_argument('--mean-face', default='./20words_mean_face.npy', help='mean face pathname')
+    parser.add_argument('--mean-face', default='preprocessing/20words_mean_face.npy', help='mean face pathname')
     # -- mouthROIs utils
     parser.add_argument('--crop-width', default=96, type=int, help='the width of mouth ROIs')
     parser.add_argument('--crop-height', default=96, type=int, help='the height of mouth ROIs')
@@ -137,7 +138,8 @@ for filename_idx, line in enumerate(lines):
     dst_pathname = os.path.join( args.save_direc, filename+'.npz')
 
     assert os.path.isfile(video_pathname), "File does not exist. Path input: {}".format(video_pathname)
-    assert os.path.isfile(landmarks_pathname), "File does not exist. Path input: {}".format(landmarks_pathname)
+    if not os.path.isfile(landmarks_pathname):
+        get_landmarks(video_pathname, landmarks_pathname)
 
     if os.path.exists(dst_pathname):
         continue
@@ -146,7 +148,7 @@ for filename_idx, line in enumerate(lines):
     landmarks = [None] * len( multi_sub_landmarks)
     for frame_idx in range(len(landmarks)):
         try:
-            landmarks[frame_idx] = multi_sub_landmarks[frame_idx][int(person_id)]['facial_landmarks']
+            landmarks[frame_idx] = multi_sub_landmarks[frame_idx][int(person_id)]
         except IndexError:
             continue
 
