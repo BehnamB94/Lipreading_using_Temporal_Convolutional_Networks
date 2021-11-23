@@ -5,7 +5,7 @@
 # Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 
 
-"""Transforms mp4 audio to npz. Code has strong assumptions on the dataset organization!"""
+"""Transforms avi audio to npz. Code has strong assumptions on the dataset organization!"""
 
 import os
 import librosa
@@ -35,7 +35,7 @@ for filename_idx, line in enumerate(lines):
 
     filename, person_id = line.split(',')
     print('idx: {} \tProcessing.\t{}'.format(filename_idx, filename))
-    video_pathname = os.path.join(args.video_direc, filename+'.mp4')
+    video_pathname = os.path.join(args.video_direc, filename+'.avi')
     dst_pathname = os.path.join( args.save_direc, filename+'.npz')
 
     assert os.path.isfile(video_pathname), "File does not exist. Path input: {}".format(video_pathname)

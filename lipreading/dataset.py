@@ -64,13 +64,13 @@ class MyDataset(object):
         if not dir_fp:
             return
 
-        # get npy/npz/mp4 files
+        # get npy/npz/avi files
         search_str_npz = os.path.join(dir_fp, '*', self._data_partition, '*.npz')
         search_str_npy = os.path.join(dir_fp, '*', self._data_partition, '*.npy')
-        search_str_mp4 = os.path.join(dir_fp, '*', self._data_partition, '*.mp4')
+        search_str_avi = os.path.join(dir_fp, '*', self._data_partition, '*.avi')
         self._data_files.extend( glob.glob( search_str_npz ) )
         self._data_files.extend( glob.glob( search_str_npy ) )
-        self._data_files.extend( glob.glob( search_str_mp4 ) )
+        self._data_files.extend( glob.glob( search_str_avi ) )
 
         # If we are not using the full set of labels, remove examples for labels not used
         self._data_files = [ f for f in self._data_files if f.split('/')[self.label_idx] in self._labels ]
@@ -80,7 +80,7 @@ class MyDataset(object):
         try:
             if filename.endswith('npz'):
                 return np.load(filename)['data']
-            elif filename.endswith('mp4'):
+            elif filename.endswith('avi'):
                 return librosa.load(filename, sr=16000)[0][-19456:]
             else:
                 return np.load(filename)

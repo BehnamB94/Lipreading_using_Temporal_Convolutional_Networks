@@ -132,7 +132,7 @@ for filename_idx, line in enumerate(lines):
     filename, person_id = line.split(',')
     print('idx: {} \tProcessing.\t{}'.format(filename_idx, filename))
 
-    video_pathname = os.path.join(args.video_direc, filename+'.mp4')
+    video_pathname = os.path.join(args.video_direc, filename+'.avi')
     landmarks_pathname = os.path.join(args.landmark_direc, filename+'.npz')
     dst_pathname = os.path.join( args.save_direc, filename+'.npz')
 
