@@ -196,9 +196,19 @@ Steps for test with new data:
 - add data list in a csv file in `preprocessing` folder like `3files.csv` according to `data` folder
 - run bellow code to extract landmarks and make RIO nzp files:
   ```
-  python3 preprocessing/crop_mouth_from_video.py \
+  python preprocessing/crop_mouth_from_video.py \
           --video-direc data/ \
           --landmark-direc landmarks/ \
           --filename-path preprocessing/3files.csv \
           --save-direc datasets/visual_data/
+  ```
+  - run bellow code to test model with `test` folder data:
+  ```
+  python main.py \
+         --config-path configs/lrw_resnet18_mstcn.json \
+         --model-path models/lrw_resnet18_mstcn_adamw_s3.pth.tar \
+         --data-dir datasets/visual_data \
+         --test \
+         --num-classes 500 \
+         --label-path ./labels/1Word.txt
   ```

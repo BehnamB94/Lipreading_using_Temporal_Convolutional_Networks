@@ -12,12 +12,14 @@ def get_preprocessing_pipelines(modality):
         crop_size = (88, 88)
         (mean, std) = (0.421, 0.165)
         preprocessing['train'] = Compose([
+                                    RgbToGray(),
                                     Normalize( 0.0,255.0 ),
                                     RandomCrop(crop_size),
                                     HorizontalFlip(0.5),
                                     Normalize(mean, std) ])
 
         preprocessing['val'] = Compose([
+                                    RgbToGray(),
                                     Normalize( 0.0,255.0 ),
                                     CenterCrop(crop_size),
                                     Normalize(mean, std) ])
