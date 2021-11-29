@@ -89,6 +89,7 @@ class MyDataset(object):
             sys.exit()
 
     def _apply_variable_length_aug(self, filename, raw_data):
+        return raw_data
         # read info txt file (to see duration of word, to be used to do temporal cropping)
         info_txt = os.path.join(self._annonation_direc, *filename.split('/')[self.label_idx:] )  # swap base folder
         info_txt = os.path.splitext( info_txt )[0] + '.txt'   # swap extension
