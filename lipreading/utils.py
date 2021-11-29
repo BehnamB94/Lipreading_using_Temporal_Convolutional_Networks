@@ -182,7 +182,7 @@ def get_logger(args,save_path):
 
 
 def update_logger_batch( args, logger, dset_loader, batch_idx, running_loss, running_corrects, running_all, batch_time, data_time ):
-    perc_epoch = 100. * batch_idx / (len(dset_loader)-1)
+    perc_epoch = 100. * (batch_idx + 1) / len(dset_loader)
     logger.info('[{:5.0f}/{:5.0f} ({:.0f}%)]\tLoss: {:.4f}\tAcc:{:.4f}\tCost time:{:1.3f} ({:1.3f})s\tData time:{:1.3f} ({:1.3f})\tInstances per second: {:.2f}'.format(
         running_all,
         len(dset_loader.dataset),
