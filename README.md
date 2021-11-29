@@ -202,13 +202,25 @@ Steps for test with new data:
           --filename-path preprocessing/3files.csv \
           --save-direc datasets/visual_data/
   ```
-  - run bellow code to test model with `test` folder data:
+- run bellow code to test model with `test` folder data:
   ```
   python main.py \
          --config-path configs/lrw_resnet18_mstcn.json \
          --model-path models/lrw_resnet18_mstcn_adamw_s3.pth.tar \
          --data-dir datasets/visual_data \
-         --test \
          --num-classes 500 \
-         --label-path ./labels/1Word.txt
+         --label-path ./labels/1Word.txt \
+         --test
+  ```
+Steps for train with new data:
+- do test steps above
+- make sure new packages listed in `requirements.txt` are installed.
+  ```
+  python main.py \
+         --config-path configs/lrw_resnet18_mstcn.json \
+         --model-path models/lrw_resnet18_mstcn_adamw_s3.pth.tar \
+         --data-dir datasets/visual_data \
+         --num-classes 500 \
+         --label-path ./labels/1Word.txt \
+         --annonation-direc ""
   ```
