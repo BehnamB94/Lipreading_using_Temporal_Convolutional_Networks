@@ -4,6 +4,7 @@
 *.mp4
 *.npz
 train_logs/
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
