@@ -10,9 +10,10 @@ import os
 import cv2
 import glob
 import argparse
-import numpy as np
 from collections import deque
-from facial_landmarks import get_landmarks
+from multiprocessing import Pool
+
+import numpy as np
 
 from utils import *
 from transform import *
@@ -32,7 +33,7 @@ def load_args(default_config=None):
     parser.add_argument('--crop-height', default=96, type=int, help='the height of mouth ROIs')
     parser.add_argument('--start-idx', default=48, type=int, help='the start of landmark index')
     parser.add_argument('--stop-idx', default=68, type=int, help='the end of landmark index')
-    parser.add_argument('--window-margin', default=12, type=int, help='window margin for smoothed_landmarks')
+    parser.add_argument('--window-margin', default=3, type=int, help='window margin for smoothed_landmarks')
     # -- convert to gray scale
     parser.add_argument('--convert-gray', default=False, action='store_true', help='convert2grayscale')
     # -- test set only
@@ -128,21 +129,20 @@ def landmarks_interpolate(landmarks):
 lines = open(args.filename_path).read().splitlines()
 lines = list(filter(lambda x: 'test' == x.split('/')[-2], lines)) if args.testset_only else lines
 
-for filename_idx, line in enumerate(lines):
 
+def preprocess(line):
     filename, person_id = line.split(',')
-    print('idx: {} \tProcessing.\t{}'.format(filename_idx, filename))
+    print('Processing {}'.format(filename))
 
     video_pathname = os.path.join(args.video_direc, filename+'.avi')
     landmarks_pathname = os.path.join(args.landmark_direc, filename+'.npz')
     dst_pathname = os.path.join( args.save_direc, filename+'.npz')
 
     assert os.path.isfile(video_pathname), "File does not exist. Path input: {}".format(video_pathname)
-    if not os.path.isfile(landmarks_pathname):
-        get_landmarks(video_pathname, landmarks_pathname)
+    assert os.path.isfile(landmarks_pathname), "File does not exist. Path input: {}".format(landmarks_pathname)
 
     if os.path.exists(dst_pathname):
-        continue
+        return
 
     multi_sub_landmarks = np.load( landmarks_pathname, allow_pickle=True)['data']
     landmarks = [None] * len( multi_sub_landmarks)
@@ -155,7 +155,7 @@ for filename_idx, line in enumerate(lines):
     # -- pre-process landmarks: interpolate frames not being detected.
     preprocessed_landmarks = landmarks_interpolate(landmarks)
     if not preprocessed_landmarks:
-        continue
+        return
 
     # -- crop
     sequence = crop_patch(video_pathname, preprocessed_landmarks)
@@ -165,4 +165,7 @@ for filename_idx, line in enumerate(lines):
     data = convert_bgr2gray(sequence) if args.convert_gray else sequence[...,::-1]
     save2npz(dst_pathname, data=data)
 
+
+with Pool() as pool:
+    pool.map(preprocess, lines)
 print('Done.')
