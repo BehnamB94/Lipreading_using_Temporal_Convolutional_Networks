@@ -199,7 +199,7 @@ Steps for test with new data:
   python preprocessing/crop_mouth_from_video.py \
           --video-direc data/ \
           --landmark-direc landmarks/ \
-          --filename-path preprocessing/3files.csv \
+          --filename-path preprocessing/data_list.csv \
           --save-direc datasets/visual_data/
   ```
 - run bellow code to test model with `test` folder data:
@@ -212,15 +212,14 @@ Steps for test with new data:
          --label-path ./labels/1Word.txt \
          --test
   ```
-Steps for train with new data:
-- do test steps above
-- make sure new packages listed in `requirements.txt` are installed.
+Train with new data:
   ```
   python main.py \
          --config-path configs/lrw_resnet18_mstcn.json \
-         --model-path models/lrw_resnet18_mstcn_adamw_s3.pth.tar \
+         --batch-size 2 \
+         --interval 1 \
          --data-dir datasets/visual_data \
-         --num-classes 500 \
-         --label-path ./labels/1Word.txt \
+         --num-classes 22 \
+         --label-path ./labels/labels.txt \
          --annonation-direc ""
   ```
