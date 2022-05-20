@@ -10,6 +10,7 @@
 import os
 import librosa
 import argparse
+from multiprocessing import Pool
 
 from utils import *
 
@@ -31,17 +32,20 @@ args = load_args()
 lines = open(args.filename_path).read().splitlines()
 lines = list(filter(lambda x: 'test' == x.split('/')[-2], lines)) if args.testset_only else lines
 
-for filename_idx, line in enumerate(lines):
-
+def preprocess(line):
     filename, person_id = line.split(',')
-    print('idx: {} \tProcessing.\t{}'.format(filename_idx, filename))
     video_pathname = os.path.join(args.video_direc, filename+'.avi')
     dst_pathname = os.path.join( args.save_direc, filename+'.npz')
 
     if os.path.exists(dst_pathname):
-        continue
+        return
 
+    print('Processing.\t{}'.format(filename))
     assert os.path.isfile(video_pathname), "File does not exist. Path input: {}".format(video_pathname)
 
     data = librosa.load(video_pathname, sr=16000)[0][-19456:]
     save2npz(dst_pathname, data=data)
+
+with Pool() as pool:
+    pool.map(preprocess, lines)
+print('Done.')

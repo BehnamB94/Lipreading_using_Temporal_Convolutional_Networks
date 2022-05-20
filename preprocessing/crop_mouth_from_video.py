@@ -132,7 +132,6 @@ lines = list(filter(lambda x: 'test' == x.split('/')[-2], lines)) if args.testse
 
 def preprocess(line):
     filename, person_id = line.split(',')
-    print('Processing {}'.format(filename))
 
     video_pathname = os.path.join(args.video_direc, filename+'.avi')
     landmarks_pathname = os.path.join(args.landmark_direc, filename+'.npz')
@@ -144,26 +143,30 @@ def preprocess(line):
     if os.path.exists(dst_pathname):
         return
 
-    multi_sub_landmarks = np.load( landmarks_pathname, allow_pickle=True)['data']
-    landmarks = [None] * len( multi_sub_landmarks)
-    for frame_idx in range(len(landmarks)):
-        try:
-            landmarks[frame_idx] = multi_sub_landmarks[frame_idx][int(person_id)]
-        except IndexError:
-            continue
+    print('Processing {}'.format(filename))
+    try:
+        multi_sub_landmarks = np.load( landmarks_pathname, allow_pickle=True)['data']
+        landmarks = [None] * len( multi_sub_landmarks)
+        for frame_idx in range(len(landmarks)):
+            try:
+                landmarks[frame_idx] = multi_sub_landmarks[frame_idx][int(person_id)]
+            except IndexError:
+                continue
 
-    # -- pre-process landmarks: interpolate frames not being detected.
-    preprocessed_landmarks = landmarks_interpolate(landmarks)
-    if not preprocessed_landmarks:
-        return
+        # -- pre-process landmarks: interpolate frames not being detected.
+        preprocessed_landmarks = landmarks_interpolate(landmarks)
+        if not preprocessed_landmarks:
+            return
 
-    # -- crop
-    sequence = crop_patch(video_pathname, preprocessed_landmarks)
-    assert sequence is not None, "cannot crop from {}.".format(filename)
+        # -- crop
+        sequence = crop_patch(video_pathname, preprocessed_landmarks)
+        assert sequence is not None, "cannot crop from {}.".format(filename)
 
-    # -- save
-    data = convert_bgr2gray(sequence) if args.convert_gray else sequence[...,::-1]
-    save2npz(dst_pathname, data=data)
+        # -- save
+        data = convert_bgr2gray(sequence) if args.convert_gray else sequence[...,::-1]
+        save2npz(dst_pathname, data=data)
+    except:
+        print('ERROR in processing {}'.format(filename))
 
 
 with Pool() as pool:
