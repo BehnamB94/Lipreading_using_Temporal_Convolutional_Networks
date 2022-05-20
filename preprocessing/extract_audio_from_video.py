@@ -38,6 +38,9 @@ for filename_idx, line in enumerate(lines):
     video_pathname = os.path.join(args.video_direc, filename+'.avi')
     dst_pathname = os.path.join( args.save_direc, filename+'.npz')
 
+    if os.path.exists(dst_pathname):
+        continue
+
     assert os.path.isfile(video_pathname), "File does not exist. Path input: {}".format(video_pathname)
 
     data = librosa.load(video_pathname, sr=16000)[0][-19456:]
