@@ -10,10 +10,12 @@
 import os
 import librosa
 import argparse
+import warnings
 from multiprocessing import Pool
 
 from utils import *
 
+warnings.filterwarnings('ignore')
 
 def load_args(default_config=None):
     parser = argparse.ArgumentParser(description='Extract Audio Waveforms')
