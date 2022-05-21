@@ -45,7 +45,12 @@ def preprocess(line):
     print('Processing.\t{}'.format(filename))
     assert os.path.isfile(video_pathname), "File does not exist. Path input: {}".format(video_pathname)
 
-    data = librosa.load(video_pathname, sr=16000)[0][-19456:]
+    max_length = 19456
+    audio = librosa.load(video_pathname, sr=16000)[0]
+    argmax = audio.argmax()
+    start = max(0, argmax-max_length//2)
+    end = min(len(audio), max(start+max_length, argmax+max_length//2))
+    data = audio[start:end]
     save2npz(dst_pathname, data=data)
 
 with Pool() as pool:
