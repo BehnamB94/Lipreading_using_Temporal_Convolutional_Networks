@@ -45,11 +45,11 @@ class MyDataset(object):
         self.instance_ids = dict()
         if self.modality == "mixed":
             instances = dict()
-            for i, (v, a) in enumerate(zip(*self._data_files)):
+            for v in self._data_files[0]:
                 video_instance = self._get_instance_id_from_path(v)
+                instances[video_instance] = [v]
+            for a in self._data_files[1]:
                 audio_instance = self._get_instance_id_from_path(a)
-                tmp_list = instances.setdefault(video_instance, list())
-                tmp_list.append(v)
                 tmp_list = instances.setdefault(audio_instance, list())
                 tmp_list.append(a)
             i = 0
@@ -126,7 +126,7 @@ class MyDataset(object):
         return preprocess_data, label
 
     def __len__(self):
-        return len(self._data_files)
+        return len(self.list)
 
 
 def pad_packed_collate(batch):
