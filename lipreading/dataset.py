@@ -19,6 +19,7 @@ class MyDataset(object):
         self._label_fp = label_fp
         self._annonation_direc = annonation_direc
 
+        self.modality = modality
         self.fps = 25 if modality == "video" else 16000
         self.is_var_length = True
         self.label_idx = -3
@@ -42,10 +43,31 @@ class MyDataset(object):
         # -- from self._data_files to self.list
         self.list = dict()
         self.instance_ids = dict()
-        for i, x in enumerate(self._data_files):
-            label = self._get_label_from_path( x )
-            self.list[i] = [ x, self._labels.index( label ) ]
-            self.instance_ids[i] = self._get_instance_id_from_path( x )
+        if self.modality == "mixed":
+            instances = dict()
+            for i, (v, a) in enumerate(zip(*self._data_files)):
+                video_instance = self._get_instance_id_from_path(v)
+                audio_instance = self._get_instance_id_from_path(a)
+                tmp_list = instances.setdefault(video_instance, list())
+                tmp_list.append(v)
+                tmp_list = instances.setdefault(audio_instance, list())
+                tmp_list.append(a)
+            i = 0
+            for inst in instances.keys():
+                if len(instances[inst]) != 2:
+                    continue
+                video, audio = instances[inst]
+                if not "visual_data" in video:
+                    video, audio = audio, video
+                label = self._get_label_from_path(audio)
+                self.list[i] = video, audio, self._labels.index( label )
+                self.instance_ids[i] = self._get_instance_id_from_path(audio)
+                i += 1
+        else:
+            for i, x in enumerate(self._data_files):
+                label = self._get_label_from_path( x )
+                self.list[i] = [ x, self._labels.index( label ) ]
+                self.instance_ids[i] = self._get_instance_id_from_path( x )
 
         print('Partition {} loaded'.format(self._data_partition))
 
@@ -58,22 +80,24 @@ class MyDataset(object):
         return x.split('/')[self.label_idx]
 
     def _get_files_for_partition(self):
-        # get rgb/mfcc file paths
+        def get_all_paths(dir_fp):
+            result = []
+            # get npy/npz/avi files
+            search_str_npz = os.path.join(dir_fp, '*', self._data_partition, '*.npz')
+            search_str_npy = os.path.join(dir_fp, '*', self._data_partition, '*.npy')
+            search_str_avi = os.path.join(dir_fp, '*', self._data_partition, '*.avi')
+            result.extend( glob.glob( search_str_npz ) )
+            result.extend( glob.glob( search_str_npy ) )
+            result.extend( glob.glob( search_str_avi ) )
 
-        dir_fp = self._data_dir
-        if not dir_fp:
-            return
+            # If we are not using the full set of labels, remove examples for labels not used
+            result = [ f for f in result if f.split('/')[self.label_idx] in self._labels ]
+            return result
 
-        # get npy/npz/avi files
-        search_str_npz = os.path.join(dir_fp, '*', self._data_partition, '*.npz')
-        search_str_npy = os.path.join(dir_fp, '*', self._data_partition, '*.npy')
-        search_str_avi = os.path.join(dir_fp, '*', self._data_partition, '*.avi')
-        self._data_files.extend( glob.glob( search_str_npz ) )
-        self._data_files.extend( glob.glob( search_str_npy ) )
-        self._data_files.extend( glob.glob( search_str_avi ) )
-
-        # If we are not using the full set of labels, remove examples for labels not used
-        self._data_files = [ f for f in self._data_files if f.split('/')[self.label_idx] in self._labels ]
+        if self.modality == "mixed":
+            self._data_files = get_all_paths('datasets/visual_data'), get_all_paths('datasets/audio_data')
+        else:
+            self._data_files = get_all_paths(self._data_dir)
 
     def load_data(self, filename):
 
@@ -88,33 +112,17 @@ class MyDataset(object):
             print( "Error when reading file: {}".format(filename) )
             sys.exit()
 
-    def _apply_variable_length_aug(self, filename, raw_data):
-        return raw_data
-        # read info txt file (to see duration of word, to be used to do temporal cropping)
-        info_txt = os.path.join(self._annonation_direc, *filename.split('/')[self.label_idx:] )  # swap base folder
-        info_txt = os.path.splitext( info_txt )[0] + '.txt'   # swap extension
-        info = read_txt_lines(info_txt)  
-
-        utterance_duration = float( info[4].split(' ')[1] )
-        half_interval = int( utterance_duration/2.0 * self.fps)  # num frames of utterance / 2
-                
-        n_frames = raw_data.shape[0]
-        mid_idx = ( n_frames -1 ) // 2  # video has n frames, mid point is (n-1)//2 as count starts with 0
-        left_idx = random.randint(0, max(0,mid_idx-half_interval-1)  )   # random.randint(a,b) chooses in [a,b]
-        right_idx = random.randint( min( mid_idx+half_interval+1,n_frames ), n_frames  )
-
-        return raw_data[left_idx:right_idx]
 
     def __getitem__(self, idx):
-
-        raw_data = self.load_data(self.list[idx][0])
-        # -- perform variable length on training set
-        if ( self._data_partition == 'train' ) and self.is_var_length:
-            data = self._apply_variable_length_aug(self.list[idx][0], raw_data)
+        if self.modality == "mixed":
+            video_data = self.load_data(self.list[idx][0])
+            audio_data = self.load_data(self.list[idx][1])
+            video_preprocessing, audio_preprocessing = self.preprocessing_func
+            preprocess_data = video_preprocessing(video_data), audio_preprocessing(audio_data)
         else:
-            data = raw_data
-        preprocess_data = self.preprocessing_func(data)
-        label = self.list[idx][1]
+            raw_data = self.load_data(self.list[idx][0])
+            preprocess_data = self.preprocessing_func(raw_data)
+        label = self.list[idx][-1]
         return preprocess_data, label
 
     def __len__(self):
@@ -141,3 +149,11 @@ def pad_packed_collate(batch):
         data = torch.FloatTensor(data_np)
     labels = torch.LongTensor(labels_np)
     return data, lengths, labels
+
+
+def mixed_pad_packed_collate(batch):
+    video_batch = [(v, lbl) for (v, a), lbl in batch]
+    audio_batch = [(a, lbl) for (v, a), lbl in batch]
+    video_data, video_lengths, video_labels = pad_packed_collate(video_batch)
+    audio_data, audio_lengths, audio_labels = pad_packed_collate(audio_batch)
+    return video_data, video_lengths, audio_data, audio_lengths, video_labels

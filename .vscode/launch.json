@@ -1,0 +1,84 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Crop Mouth",
+            "type": "python",
+            "request": "launch",
+            "program": "preprocessing/crop_mouth_from_video.py",
+            "args": ["--video-direc", "data",
+                     "--landmark-direc", "landmarks",
+                     "--filename-path", "preprocessing/visual_data_list.csv",
+                     "--save-direc", "datasets/visual_data",
+                     ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Extract Audio",
+            "type": "python",
+            "request": "launch",
+            "program": "preprocessing/extract_audio_from_video.py",
+            "args": ["--video-direc", "data", 
+                     "--filename-path", "preprocessing/audio_data_list.csv",
+                     "--save-direc", "datasets/audio_data",
+                     ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Train Visual",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "args": ["--config-path", "configs/lrw_resnet18_mstcn.json", 
+                     "--model-path", "models/lrw_resnet18_mstcn_adamw_s3.pth.tar",
+                     "--data-dir", "datasets/visual_data",
+                     "--num-classes", "22",
+                     "--label-path", "./labels/labels.txt",
+                     "--annonation-direc", "",
+                     "--interval", "1",
+                     "--allow-size-mismatch"
+                     ], //, "--test"
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Train Audio",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "args": ["--modality","raw_audio",
+                     "--config-path", "configs/lrw_resnet18_mstcn.json", 
+                     "--model-path", "models/lrw_resnet18_mstcn_audio_adamw.pth.tar",
+                     "--data-dir", "datasets/audio_data",
+                     "--num-classes", "22",
+                     "--label-path", "./labels/labels.txt",
+                     "--annonation-direc", "",
+                     "--interval", "1",
+                     "--allow-size-mismatch"
+                     ], //, "--test"
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Train Mixed",
+            "type": "python",
+            "request": "launch",
+            "program": "main_mixed.py",
+            "args": ["--modality","mixed",
+                     "--video-config-path", "configs/lrw_resnet18_mstcn.json", 
+                     "--audio-config-path", "configs/lrw_resnet18_mstcn.json", 
+                     "--video-model-path", "models/lrw_resnet18_mstcn_adamw_s3.pth.tar",
+                     "--audio-model-path", "models/lrw_resnet18_mstcn_audio_adamw.pth.tar",
+                     "--batch-size", "4",
+                     "--num-classes", "22",
+                     "--label-path", "./labels/labels.txt",
+                     "--annonation-direc", "",
+                     "--interval", "1",
+                     "--allow-size-mismatch"
+                     ],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
+    ]
+}
