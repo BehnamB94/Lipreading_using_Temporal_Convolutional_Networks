@@ -88,7 +88,7 @@ class CheckpointSaver:
         self.lr_steps = []
 
         # init var to keep track of best performing checkpoint
-        self.current_best = 0
+        self.current_best = 1000
 
         # save best at each step?
         if self.save_best_step:
@@ -104,7 +104,7 @@ class CheckpointSaver:
         checkpoint_fp = os.path.join(self.save_dir, self.checkpoint_fn)
 
         # keep track of best model
-        self.is_best = current_perf > self.current_best
+        self.is_best = current_perf < self.current_best
         if self.is_best:
             self.current_best = current_perf
             best_fp = os.path.join(self.save_dir, self.best_fn)
@@ -114,7 +114,7 @@ class CheckpointSaver:
         if self.save_best_step:
 
             assert epoch >= 0, "Since save_best_step=True, need proper value for 'epoch'. Current: {}".format(epoch)
-            s_idx = sum( epoch >= l for l in lr_steps )
+            s_idx = sum( epoch >= l for l in self.lr_steps )
             self.is_best_for_stage = current_perf > self.best_for_stage[s_idx]
 
             if self.is_best_for_stage:

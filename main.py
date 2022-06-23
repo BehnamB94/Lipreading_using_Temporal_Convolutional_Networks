@@ -247,7 +247,7 @@ def main():
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict()
         }
-        ckpt_saver.save(save_dict, acc_avg_val)
+        ckpt_saver.save(save_dict, loss_avg_val)
         scheduler.adjust_lr(optimizer, epoch)
         epoch += 1
 
