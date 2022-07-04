@@ -38,7 +38,7 @@
                      "--num-classes", "22",
                      "--label-path", "./labels/labels.txt",
                      "--annonation-direc", "",
-                     "--interval", "1",
+                     "--interval", "10",
                      "--allow-size-mismatch"
                      ], //, "--test"
             "console": "integratedTerminal"
@@ -55,7 +55,7 @@
                      "--num-classes", "22",
                      "--label-path", "./labels/labels.txt",
                      "--annonation-direc", "",
-                     "--interval", "1",
+                     "--interval", "10",
                      "--allow-size-mismatch"
                      ], //, "--test"
             "console": "integratedTerminal"
@@ -74,7 +74,7 @@
                      "--num-classes", "22",
                      "--label-path", "./labels/labels.txt",
                      "--annonation-direc", "",
-                     "--interval", "1",
+                     "--interval", "10",
                      "--allow-size-mismatch"
                      ],
             "console": "integratedTerminal",
@@ -92,7 +92,7 @@
                      "--num-classes", "22",
                      "--label-path", "./labels/labels.txt",
                      "--annonation-direc", "",
-                     "--interval", "1",
+                     "--interval", "10",
                      "--allow-size-mismatch"
                      ], //, "--test"
             "console": "integratedTerminal"
@@ -104,13 +104,13 @@
             "program": "main.py",
             "args": ["--modality","raw_audio",
                      "--config-path", "configs/lrw_snv1x_dsmstcn3x.json", 
-                    //  "--model-path", "models/lrw_snv1x_dsmstcn3x.pth.tar",
+                     "--model-path", "train_logs/tcn/2022-06-21T13:24:03/ckpt.best.pth.tar",
                      "--data-dir", "datasets/audio_data",
                      "--batch-size", "4",
                      "--num-classes", "22",
                      "--label-path", "./labels/labels.txt",
                      "--annonation-direc", "",
-                     "--interval", "1",
+                     "--interval", "10",
                      "--allow-size-mismatch"
                      ], //, "--test"
             "console": "integratedTerminal"
@@ -123,13 +123,14 @@
             "args": ["--modality","mixed",
                      "--video-config-path", "configs/lrw_snv1x_dsmstcn3x.json", 
                      "--audio-config-path", "configs/lrw_snv1x_dsmstcn3x.json", 
-                     "--video-model-path", "train_logs/tcn/2022-06-21T11:15:27/ckpt.best.pth.tar",
-                     "--audio-model-path", "train_logs/tcn/2022-06-21T13:24:03/ckpt.best.pth.tar",
+                     "--mixed-model-path", "train_logs/tcn/2022-07-04T12:57:14/ckpt.best.pth.tar",
+                    //  "--video-model-path", "train_logs/tcn/2022-07-03T18:27:39/ckpt.best.pth.tar",
+                    //  "--audio-model-path", "train_logs/tcn/2022-07-04T08:50:31/ckpt.best.pth.tar",
                      "--batch-size", "4",
                      "--num-classes", "22",
                      "--label-path", "./labels/labels.txt",
                      "--annonation-direc", "",
-                     "--interval", "1",
+                     "--interval", "10",
                      "--allow-size-mismatch"
                      ],
             "console": "integratedTerminal",

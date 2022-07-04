@@ -124,6 +124,9 @@ def load_args(default_config=None):
     )
     # -- test
     parser.add_argument(
+        "--mixed-model-path", type=str, default=None, help="Pretrained model pathname"
+    )
+    parser.add_argument(
         "--video-model-path", type=str, default=None, help="Pretrained model pathname"
     )
     parser.add_argument(
@@ -357,7 +360,7 @@ def main():
     # -- get learning rate scheduler
     scheduler = CosineScheduler(args.lr, args.epochs)
 
-    if args.video_model_path:
+    if (args.video_model_path and args.audio_model_path) or args.mixed_model_path:
 
         def load_weights(sub_model, path):
             assert path.endswith(".tar") and os.path.isfile(path), f"{path}: not exist"
@@ -368,8 +371,11 @@ def main():
             )
             logger.info("SubModel loaded from {}".format(path))
 
-        load_weights(video_model, args.video_model_path)
-        load_weights(audio_model, args.audio_model_path)
+        if args.mixed_model_path:
+            load_weights(model, args.mixed_model_path)
+        else:
+            load_weights(video_model, args.video_model_path)
+            load_weights(audio_model, args.audio_model_path)
         if args.test:
             acc_avg_test, loss_avg_test = evaluate(
                 model, dset_loaders["test"], criterion
