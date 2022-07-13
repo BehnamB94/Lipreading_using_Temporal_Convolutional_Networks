@@ -316,7 +316,7 @@ def get_model_from_json(config_path, modality):
     }
     model = Lipreading(
         modality=modality,
-        num_classes=512,
+        num_classes=args.num_classes,
         tcn_options=tcn_options,
         backbone_type=args_loaded["backbone_type"],
         relu_type=args_loaded["relu_type"],
@@ -343,12 +343,18 @@ def main():
             super(MixedModel, self).__init__()
             self.video_model = video_model
             self.audio_model = audio_model
-            self.fc = nn.Linear(1024, num_classes)
+            self.norm1 = nn.LayerNorm(num_classes)
+            self.norm2 = nn.LayerNorm(num_classes)
+            self.fc1 = nn.Linear(num_classes * 2, num_classes * 2)
+            self.fc2 = nn.Linear(num_classes * 2, num_classes)
 
         def forward(self, video, video_lengths, audio, audio_lengths):
             video_emb = self.video_model(video, lengths=video_lengths)
             audio_emb = self.audio_model(audio, lengths=audio_lengths)
-            return self.fc(torch.concat([video_emb, audio_emb], dim=1))
+            video_emb = self.norm1(video_emb)
+            audio_emb = self.norm2(audio_emb)
+            concat = torch.concat([video_emb, audio_emb], dim=1)
+            return self.fc2(self.fc1(concat))
 
     model = MixedModel(video_model, audio_model, num_classes=args.num_classes)
     # -- get dataset iterators
@@ -376,6 +382,10 @@ def main():
         else:
             load_weights(video_model, args.video_model_path)
             load_weights(audio_model, args.audio_model_path)
+            for param in list(video_model.parameters())[:-2]:
+                param.requires_grad = False
+            for param in list(audio_model.parameters())[:-2]:
+                param.requires_grad = False
         if args.test:
             acc_avg_test, loss_avg_test = evaluate(
                 model, dset_loaders["test"], criterion
