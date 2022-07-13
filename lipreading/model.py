@@ -36,7 +36,8 @@ class MultiscaleMultibranchTCN(nn.Module):
         xtrans = x.transpose(1, 2)
         out = self.mb_ms_tcn(xtrans)
         out = self.consensus_func( out, lengths, B )
-        return self.tcn_output(out)
+        return out
+        # return self.tcn_output(out)
 
 
 class TCN(nn.Module):

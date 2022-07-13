@@ -123,15 +123,16 @@
             "args": ["--modality","mixed",
                      "--video-config-path", "configs/lrw_snv1x_dsmstcn3x.json", 
                      "--audio-config-path", "configs/lrw_snv1x_dsmstcn3x.json", 
-                     "--mixed-model-path", "train_logs/tcn/2022-07-04T12:57:14/ckpt.best.pth.tar",
-                    //  "--video-model-path", "train_logs/tcn/2022-07-03T18:27:39/ckpt.best.pth.tar",
-                    //  "--audio-model-path", "train_logs/tcn/2022-07-04T08:50:31/ckpt.best.pth.tar",
+                    //  "--mixed-model-path", "train_logs/tcn/2022-07-13T09:21:50/ckpt.best.pth.tar",
+                     "--video-model-path", "train_logs/tcn/2022-07-03T18:27:39/ckpt.best.pth.tar",
+                     "--audio-model-path", "train_logs/tcn/2022-07-04T08:50:31/ckpt.best.pth.tar",
                      "--batch-size", "4",
                      "--num-classes", "22",
                      "--label-path", "./labels/labels.txt",
                      "--annonation-direc", "",
                      "--interval", "10",
-                     "--allow-size-mismatch"
+                     "--allow-size-mismatch",
+                     "--save-features"
                      ],
             "console": "integratedTerminal",
             "justMyCode": false

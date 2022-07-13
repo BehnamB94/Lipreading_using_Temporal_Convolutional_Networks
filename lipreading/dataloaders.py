@@ -71,6 +71,5 @@ def get_data_loaders(args):
                         shuffle=True,
                         collate_fn=collate_fn,
                         pin_memory=True,
-                        num_workers=args.workers,
-                        worker_init_fn=np.random.seed(1)) for x in ['train', 'val', 'test']}
+                        num_workers=args.workers) for x in ['train', 'val', 'test']}
     return dset_loaders

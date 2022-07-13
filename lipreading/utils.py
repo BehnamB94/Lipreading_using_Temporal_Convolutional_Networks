@@ -154,7 +154,7 @@ def load_model(load_path, model, optimizer = None, allow_size_mismatch = False):
         model_sizes = { k: v.shape for k,v in model_state_dict.items() }
         mismatched_params = []
         for k in loaded_sizes:
-            if loaded_sizes[k] != model_sizes[k]:
+            if k not in model_sizes or loaded_sizes[k] != model_sizes[k]:
                 mismatched_params.append(k)
         for k in mismatched_params:
             del loaded_state_dict[k]

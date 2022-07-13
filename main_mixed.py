@@ -115,10 +115,11 @@ def load_args(default_config=None):
     parser.add_argument(
         "--test", default=False, action="store_true", help="training mode"
     )
+    parser.add_argument("--save-features", default=False, action="store_true")
     # -- mixup
     parser.add_argument(
         "--alpha",
-        default=0.4,
+        default=0.0,
         type=float,
         help="interpolation strength (uniform=1., ERM=0.)",
     )
@@ -186,10 +187,38 @@ def load_args(default_config=None):
 
 args = load_args()
 
-torch.manual_seed(1)
-np.random.seed(1)
-random.seed(1)
-torch.backends.cudnn.benchmark = True
+# torch.manual_seed(1)
+# np.random.seed(1)
+# random.seed(1)
+# torch.backends.cudnn.benchmark = True
+
+
+def save_features(model, dset_loaders):
+    model.eval()
+    with torch.no_grad():
+        for dlabel, dloader in dset_loaders.items():
+            for batch_idx, (
+                video_input,
+                video_lengths,
+                audio_input,
+                audio_lengths,
+                labels,
+            ) in enumerate(dloader):
+                npz_filename = f"features/{dlabel}-{batch_idx}.npz"
+                # if os.path.exists(npz_filename):
+                #     continue
+                logits = model(
+                    video=video_input.unsqueeze(1),
+                    video_lengths=video_lengths,
+                    audio=audio_input.unsqueeze(1),
+                    audio_lengths=audio_lengths,
+                )
+                np.savez_compressed(
+                    npz_filename,
+                    video=logits[0].numpy(),
+                    audio=logits[1].numpy(),
+                    labels=labels,
+                )
 
 
 def evaluate(model, dset_loader, criterion):
@@ -343,18 +372,19 @@ def main():
             super(MixedModel, self).__init__()
             self.video_model = video_model
             self.audio_model = audio_model
-            self.norm1 = nn.LayerNorm(num_classes)
-            self.norm2 = nn.LayerNorm(num_classes)
-            self.fc1 = nn.Linear(num_classes * 2, num_classes * 2)
-            self.fc2 = nn.Linear(num_classes * 2, num_classes)
+            # self.norm1 = nn.LayerNorm(num_classes)
+            # self.norm2 = nn.LayerNorm(num_classes)
+            # self.fc1 = nn.Linear(num_classes * 2, num_classes * 2)
+            # self.fc2 = nn.Linear(num_classes * 2, num_classes)
 
         def forward(self, video, video_lengths, audio, audio_lengths):
             video_emb = self.video_model(video, lengths=video_lengths)
             audio_emb = self.audio_model(audio, lengths=audio_lengths)
-            video_emb = self.norm1(video_emb)
-            audio_emb = self.norm2(audio_emb)
-            concat = torch.concat([video_emb, audio_emb], dim=1)
-            return self.fc2(self.fc1(concat))
+            return video_emb, audio_emb
+            # video_emb = self.norm1(video_emb)
+            # audio_emb = self.norm2(audio_emb)
+            # concat = torch.concat([video_emb, audio_emb], dim=1)
+            # return self.fc2(self.fc1(concat))
 
     model = MixedModel(video_model, audio_model, num_classes=args.num_classes)
     # -- get dataset iterators
@@ -395,6 +425,9 @@ def main():
                     "test", loss_avg_test, acc_avg_test
                 )
             )
+            return
+        if args.save_features:
+            save_features(model, dset_loaders)
             return
     epoch = args.init_epoch
 
