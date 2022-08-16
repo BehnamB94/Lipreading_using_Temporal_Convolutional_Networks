@@ -36,6 +36,7 @@
                      "--model-path", "models/lrw_resnet18_mstcn_adamw_s3.pth.tar",
                      "--data-dir", "datasets/visual_data",
                      "--num-classes", "22",
+                     "--batch-size", "2",
                      "--label-path", "./labels/labels.txt",
                      "--annonation-direc", "",
                      "--interval", "10",
@@ -137,5 +138,13 @@
             "console": "integratedTerminal",
             "justMyCode": false
         },
+        {
+            "name": "Features",
+            "type": "python",
+            "request": "launch",
+            "program": "main_feature.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
     ]
 }
