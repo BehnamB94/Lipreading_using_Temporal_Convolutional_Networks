@@ -76,14 +76,15 @@ from torch import nn
 class Model(nn.Module):
     def __init__(self, hidden_list: List[int]) -> None:
         super().__init__()
-        layres = [
+        layers = [
             nn.Linear(hidden_list[i], hidden_list[i + 1])
             for i in range(0, len(hidden_list) - 1)
         ]
-        self.fc = nn.Sequential(*layres)
+        self.fc = nn.Sequential(*layers)
+        self.active = nn.Softmax()
 
     def forward(self, x):
-        return self.fc(x)
+        return self.active(self.fc(x))
 
 
 def train(dataloader, model, loss_fn, optimizer):
@@ -123,8 +124,11 @@ def test(dataloader, model, loss_fn):
             all_predicts += pred.numpy().tolist()
     test_loss /= num_batches
     correct /= size
-    all_predicts = np.array(all_predicts).argmax(axis=1)
-    return test_loss, correct, all_predicts, np.array(all_y)
+    all_results = np.array(all_predicts)
+    all_predicts = all_results.argmax(axis=1)
+    all_results.sort(axis=1)
+    confidences = all_results[:, -1] - all_results[:, -2]
+    return test_loss, correct, all_predicts, confidences, np.array(all_y)
 
 
 model = Model([768 * 2, 256, 128, (len(new_labels))])
@@ -162,7 +166,7 @@ not_dec = 0
 best_valid_loss = 10
 for t in range(epochs):
     train_loss = train(train_dataloader, model, loss_fn, optimizer)
-    valid_loss, valid_acc, _, _ = test(valid_dataloader, model, loss_fn)
+    valid_loss, valid_acc, _, _, _ = test(valid_dataloader, model, loss_fn)
 
     if valid_loss < best_valid_loss:
         best_valid_loss = valid_loss
@@ -179,7 +183,7 @@ for t in range(epochs):
 print("Done!")
 
 #%%
-test_loss, test_acc, predicts, y_true = test(test_dataloader, model, loss_fn)
+test_loss, test_acc, predicts, confidences, y_true = test(test_dataloader, model, loss_fn)
 print(f"test loss: {valid_loss:>7f} | test acc: {(100*valid_acc):>0.1f}%")
 
 #%%
@@ -200,6 +204,21 @@ instances = 10000
 from numpy import random
 import pandas as pd
 
+
+def get_genuine_predict(real_label):
+    sub_list = np.where(test_real_larr == real_label)[0]
+    selected_index = np.random.choice(sub_list)
+    return predicts[selected_index], confidences[selected_index]
+
+def get_impostor_predict(real_label):
+    sub_list = np.where(test_real_larr != real_label)[0]
+    selected_index = np.random.choice(sub_list)
+    return predicts[selected_index], confidences[selected_index]
+
+genuine_predict_func = np.vectorize(get_genuine_predict)
+impostor_predict_func = np.vectorize(get_impostor_predict)
+
+
 df_dict = dict()
 for sequence_length in sequence_length_list:
     patterns = list()
@@ -211,23 +230,13 @@ for sequence_length in sequence_length_list:
     true_label_func = np.vectorize(lambda x: lbl_dict[x])
     true_labels = true_label_func(patterns)
 
-    def get_genuine_predict(real_label):
-        sub_list = np.where(test_real_larr == real_label)[0]
-        selected_index = np.random.choice(sub_list)
-        return predicts[selected_index]
+    genuine_labels, genuine_confidence = genuine_predict_func(patterns)
+    genuine_compare = genuine_labels == true_labels
+    genuine_scores = (genuine_compare * genuine_confidence).mean(axis=1)
 
-    genuine_predict_func = np.vectorize(get_genuine_predict)
-    genuine_labels = genuine_predict_func(patterns)
-    genuine_scores = (genuine_labels == true_labels).mean(axis=1)
-
-    def get_impostor_predict(real_label):
-        sub_list = np.where(test_real_larr != real_label)[0]
-        selected_index = np.random.choice(sub_list)
-        return predicts[selected_index]
-
-    impostor_predict_func = np.vectorize(get_impostor_predict)
-    impostor_labels = impostor_predict_func(patterns)
-    impostor_scores = (impostor_labels == true_labels).mean(axis=1)
+    impostor_labels, impostor_confidence = impostor_predict_func(patterns)
+    impostor_compare = impostor_labels == true_labels
+    impostor_scores = (impostor_compare * impostor_confidence).mean(axis=1)
 
     import sklearn.metrics
 
