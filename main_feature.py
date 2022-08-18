@@ -7,8 +7,8 @@ import numpy as np
 from torch.utils.data import DataLoader, Dataset
 
 with open("labels/labels.txt") as ff:
-    labels = ff.readlines()
-labels = list(map(str.strip, labels))
+    real_labels = ff.readlines()
+real_labels = list(map(str.strip, real_labels))
 
 def label_change(old_lbl):
     if old_lbl == "panj" or old_lbl == "mehr":
@@ -19,14 +19,16 @@ def label_change(old_lbl):
         return "do_noh"
     return old_lbl
 to_be_removed = "tir"
-to_be_removed_ind = labels.index(to_be_removed)
+to_be_removed_ind = real_labels.index(to_be_removed)
 
-mapped_labels = list(map(label_change, labels))
+real_label_indexes = [ind for ind in range(len(real_labels)) if ind != to_be_removed_ind]
+
+mapped_labels = list(map(label_change, real_labels))
 new_labels = list(sorted(set(mapped_labels)))
 new_labels.remove(to_be_removed)
 
 lbl_dict = dict()
-for ind in range(len(labels)):
+for ind in range(len(real_labels)):
     if ind != to_be_removed_ind:
         lbl_dict[ind] = new_labels.index(mapped_labels[ind])
 
@@ -37,7 +39,8 @@ def get_partition(name):
         video = data["video"]
         audio = data["audio"]
         label = data["labels"]
-        return video, audio, label
+        real_label = data["real_labels"]
+        return video, audio, label, real_label
     vlist = list()
     alist = list()
     llist = list()
@@ -56,14 +59,14 @@ def get_partition(name):
     varr = varr[valid]
     aarr = aarr[valid]
     larr = larr[valid]
-    larr = np.array([lbl_dict[a] for a in larr])
-    np.savez_compressed(total_path, video=varr, audio=aarr, labels=larr)
-    return varr, aarr, larr
+    new_larr = np.array([lbl_dict[a] for a in larr])
+    np.savez_compressed(total_path, video=varr, audio=aarr, labels=new_larr, real_labels=larr)
+    return varr, aarr, new_larr, larr
 
 
-train_varr, train_aarr, train_larr = get_partition("train")
-valid_varr, valid_aarr, valid_larr = get_partition("val")
-test_varr, test_aarr, test_larr = get_partition("test")
+train_varr, train_aarr, train_larr, _ = get_partition("train")
+valid_varr, valid_aarr, valid_larr, _ = get_partition("val")
+test_varr, test_aarr, test_larr, test_real_larr = get_partition("test")
 #%%
 
 import torch
@@ -120,7 +123,8 @@ def test(dataloader, model, loss_fn):
             all_predicts += pred.numpy().tolist()
     test_loss /= num_batches
     correct /= size
-    return test_loss, correct, np.array(all_predicts), np.array(all_y)
+    all_predicts = np.array(all_predicts).argmax(axis=1)
+    return test_loss, correct, all_predicts, np.array(all_y)
 
 
 model = Model([768 * 2, 256, 128, (len(new_labels))])
@@ -153,6 +157,7 @@ valid_dataloader = DataLoader(
 test_dataloader = DataLoader(AVDataset(test_varr, test_aarr, test_larr), batch_size=32)
 
 epochs = 500
+patience = 10
 not_dec = 0
 best_valid_loss = 10
 for t in range(epochs):
@@ -164,7 +169,7 @@ for t in range(epochs):
         not_dec = 0
     else:
         not_dec += 1
-    if not_dec > 10:
+    if not_dec > patience:
         break
 
     print(
@@ -173,14 +178,73 @@ for t in range(epochs):
     )
 print("Done!")
 
+#%%
 test_loss, test_acc, predicts, y_true = test(test_dataloader, model, loss_fn)
 print(f"test loss: {valid_loss:>7f} | test acc: {(100*valid_acc):>0.1f}%")
+
 #%%
-
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
-cm = confusion_matrix(y_true, predicts.argmax(axis=1))
-plt.imshow(cm)
+cm = confusion_matrix(y_true, predicts)
+dsp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=new_labels)
+fig, ax = plt.subplots(figsize=(10,10))
+dsp.plot(ax=ax)
+plt.xticks(rotation=90)
+plt.show()
 
 # %%
+sequence_length_list = range(3, 8)
+instances = 10000
+
+from numpy import random
+
+for sequence_length in sequence_length_list:
+    patterns = list()
+    for i in range(instances):
+        r = random.choice(real_label_indexes, replace=False, size=(sequence_length,))
+        patterns.append(r)
+    patterns = np.array(patterns)
+
+    true_label_func = np.vectorize(lambda x: lbl_dict[x])
+    true_labels = true_label_func(patterns)
+
+    def get_genuine_predict(real_label):
+        sub_list = np.where(test_real_larr == real_label)[0]
+        selected_index = np.random.choice(sub_list)
+        return predicts[selected_index]
+
+    genuine_predict_func = np.vectorize(get_genuine_predict)
+    genuine_labels = genuine_predict_func(patterns)
+    genuine_scores = (genuine_labels == true_labels).mean(axis=1)
+
+    def get_impostor_predict(real_label):
+        sub_list = np.where(test_real_larr != real_label)[0]
+        selected_index = np.random.choice(sub_list)
+        return predicts[selected_index]
+
+    impostor_predict_func = np.vectorize(get_impostor_predict)
+    impostor_labels = impostor_predict_func(patterns)
+    impostor_scores = (impostor_labels == true_labels).mean(axis=1)
+
+    import sklearn.metrics
+
+    label_array = [0] * instances + [1]  * instances
+    score_array = np.concatenate([impostor_scores, genuine_scores])
+    fmr, tpr, thr = sklearn.metrics._ranking.roc_curve(label_array, score_array)
+    euc = 1 - sklearn.metrics.auc(fmr, tpr)
+    fnmr = 1 - tpr
+
+    eer_index = np.argmin(np.abs(fmr - fnmr))
+    eer = (fmr[eer_index] + fnmr[eer_index]) / 2
+
+    print(f'EUC={euc:.4} | EER={eer:.4} (at threshold = {thr[eer_index]:.3})')
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.plot(fmr, fnmr, label=f"{sequence_length} (EER={eer:.4})")
+plt.legend(title="Sequence Length")
+plt.xlabel("FMR")
+plt.ylabel("FNMR")
+plt.show()
+# %%
+torch.save(model.state_dict(), "shuffle_mix.pth.tar")

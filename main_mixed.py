@@ -116,6 +116,7 @@ def load_args(default_config=None):
         "--test", default=False, action="store_true", help="training mode"
     )
     parser.add_argument("--save-features", default=False, action="store_true")
+    parser.add_argument("--save-models", default=False, action="store_true")
     # -- mixup
     parser.add_argument(
         "--alpha",
@@ -428,6 +429,10 @@ def main():
             return
         if args.save_features:
             save_features(model, dset_loaders)
+            return
+        if args.save_models:
+            torch.save(video_model.state_dict(), "shuffle_video.pth.tar")
+            torch.save(audio_model.state_dict(), "shuffle_audio.pth.tar")
             return
     epoch = args.init_epoch
 
