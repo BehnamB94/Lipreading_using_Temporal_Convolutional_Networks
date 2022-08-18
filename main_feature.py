@@ -198,7 +198,9 @@ sequence_length_list = range(3, 8)
 instances = 10000
 
 from numpy import random
+import pandas as pd
 
+df_dict = dict()
 for sequence_length in sequence_length_list:
     patterns = list()
     for i in range(instances):
@@ -242,6 +244,14 @@ for sequence_length in sequence_length_list:
     plt.xscale('log')
     plt.yscale('log')
     plt.plot(fmr, fnmr, label=f"{sequence_length} (EER={eer:.4})")
+    df = pd.DataFrame({"Threshold": thr, "False Match Rate": fmr, "False Non-Match Rate": fnmr})
+    df_dict[f"sequence length = {sequence_length}"] = df
+
+writer = pd.ExcelWriter('results.xlsx', engine='xlsxwriter')
+for sheet_name, df in df_dict.items():
+    df.to_excel(writer, sheet_name, index=None)
+writer.save()
+
 plt.legend(title="Sequence Length")
 plt.xlabel("FMR")
 plt.ylabel("FNMR")
