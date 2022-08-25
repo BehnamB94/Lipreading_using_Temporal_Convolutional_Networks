@@ -28,9 +28,13 @@ new_labels = list(sorted(set(mapped_labels)))
 new_labels.remove(to_be_removed)
 
 lbl_dict = dict()
+new_label_to_text = dict()
 for ind in range(len(real_labels)):
     if ind != to_be_removed_ind:
-        lbl_dict[ind] = new_labels.index(mapped_labels[ind])
+        new_label_ind = new_labels.index(mapped_labels[ind])
+        lbl_dict[ind] = new_label_ind
+        label_set = new_label_to_text.setdefault(new_label_ind, set())
+        label_set.add(real_labels[ind])
 
 def get_partition(name):
     total_path = f"features/all-{name}.npz"

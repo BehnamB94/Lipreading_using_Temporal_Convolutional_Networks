@@ -133,7 +133,7 @@
                      "--annonation-direc", "",
                      "--interval", "10",
                      "--allow-size-mismatch",
-                     "--save-models"
+                    //  "--save-models"
                      ],
             "console": "integratedTerminal",
             "justMyCode": false
@@ -145,6 +145,14 @@
             "program": "main_feature.py",
             "console": "integratedTerminal",
             "justMyCode": false
+        },
+        {
+            "name": "Export",
+            "type": "python",
+            "request": "launch",
+            "program": "export_models_onnx.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }
