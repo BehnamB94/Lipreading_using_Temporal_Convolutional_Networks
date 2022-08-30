@@ -73,6 +73,7 @@ def load_args(default_config=None):
     parser.add_argument('--workers', default=8, type=int, help='number of data loading workers')
     # paths
     parser.add_argument('--logging-dir', type=str, default='./train_logs', help = 'path to the directory in which to save the log file')
+    parser.add_argument('--cuda', default=False, action='store_true', help='Use GPU')
 
     args = parser.parse_args()
     return args
@@ -105,7 +106,9 @@ def evaluate(model, dset_loader, criterion):
 
     with torch.no_grad():
         for batch_idx, (input, lengths, labels) in enumerate(tqdm(dset_loader)):
-            logits = model(input.unsqueeze(1), lengths=lengths)
+            input = input.unsqueeze(1).cuda() if args.cuda else input.unsqueeze(1)
+            labels = labels.cuda() if args.cuda else labels
+            logits = model(input, lengths=lengths)
             _, preds = torch.max(F.softmax(logits, dim=1).data, dim=1)
             running_corrects += preds.eq(labels.view_as(preds)).sum().item()
 
@@ -133,16 +136,18 @@ def train(model, dset_loader, criterion, epoch, optimizer, logger):
 
     end = time.time()
     for batch_idx, (input, lengths, labels) in enumerate(dset_loader):
+        input = input.unsqueeze(1).cuda() if args.cuda else input.unsqueeze(1)
         # measure data loading time
         data_time.update(time.time() - end)
 
         # --
-        input, labels_a, labels_b, lam = mixup_data(input, labels, args.alpha)
-        labels_a, labels_b = labels_a, labels_b
+        input, labels_a, labels_b, lam = mixup_data(input, labels, args.alpha, use_cuda=args.cuda)
+        if args.cuda:
+            labels_a, labels_b = labels_a.cuda(), labels_b.cuda()
 
         optimizer.zero_grad()
 
-        logits = model(input.unsqueeze(1), lengths=lengths)
+        logits = model(input, lengths=lengths)
 
         loss_func = mixup_criterion(labels_a, labels_b, lam)
         loss = loss_func(criterion, logits)
@@ -185,6 +190,8 @@ def get_model_from_json():
                         relu_type=args.relu_type,
                         width_mult=args.width_mult,
                         extract_feats=args.extract_feats)
+    if args.cuda:
+        model = model.cuda()
     calculateNorm2(model)
     return model
 

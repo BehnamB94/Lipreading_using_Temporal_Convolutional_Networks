@@ -14,7 +14,7 @@ def mixup_data(x, y, alpha=1.0, soft_labels = None, use_cuda=False):
 
     batch_size = x.size()[0]
     if use_cuda:
-        index = torch.randperm(batch_size)
+        index = torch.randperm(batch_size).cuda()
     else:
         index = torch.randperm(batch_size)
 
