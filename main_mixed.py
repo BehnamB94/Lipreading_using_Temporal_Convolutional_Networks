@@ -316,7 +316,7 @@ def get_model_from_json(config_path, modality):
     }
     model = Lipreading(
         modality=modality,
-        num_classes=args.num_classes,
+        num_classes=None,
         tcn_options=tcn_options,
         backbone_type=args_loaded["backbone_type"],
         relu_type=args_loaded["relu_type"],
@@ -343,10 +343,11 @@ def main():
             super(MixedModel, self).__init__()
             self.video_model = video_model
             self.audio_model = audio_model
-            self.norm1 = nn.LayerNorm(num_classes)
-            self.norm2 = nn.LayerNorm(num_classes)
-            self.fc1 = nn.Linear(num_classes * 2, num_classes * 2)
-            self.fc2 = nn.Linear(num_classes * 2, num_classes)
+            self.norm1 = nn.LayerNorm(768)
+            self.norm2 = nn.LayerNorm(768)
+            self.fc1 = nn.Linear(768 * 2, 256)
+            self.fc2 = nn.Linear(256, 128)
+            self.fc3 = nn.Linear(128, num_classes)
 
         def forward(self, video, video_lengths, audio, audio_lengths):
             video_emb = self.video_model(video, lengths=video_lengths)
@@ -354,7 +355,7 @@ def main():
             video_emb = self.norm1(video_emb)
             audio_emb = self.norm2(audio_emb)
             concat = torch.concat([video_emb, audio_emb], dim=1)
-            return self.fc2(self.fc1(concat))
+            return self.fc3(F.relu(self.fc2(F.relu(self.fc1(concat)))))
 
     model = MixedModel(video_model, audio_model, num_classes=args.num_classes)
     # -- get dataset iterators

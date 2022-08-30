@@ -27,7 +27,10 @@ class MultiscaleMultibranchTCN(nn.Module):
         self.num_kernels = len( self.kernel_sizes )
 
         self.mb_ms_tcn = MultibranchTemporalConvNet(input_size, num_channels, tcn_options, dropout=dropout, relu_type=relu_type, dwpw=dwpw)
-        self.tcn_output = nn.Linear(num_channels[-1], num_classes)
+        if num_classes is None:
+            self.tcn_output = None
+        else:
+            self.tcn_output = nn.Linear(num_channels[-1], num_classes)
 
         self.consensus_func = _average_batch
 
@@ -36,6 +39,8 @@ class MultiscaleMultibranchTCN(nn.Module):
         xtrans = x.transpose(1, 2)
         out = self.mb_ms_tcn(xtrans)
         out = self.consensus_func( out, lengths, B )
+        if self.tcn_output is None:
+            return out
         return self.tcn_output(out)
 
 
