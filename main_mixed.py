@@ -179,6 +179,7 @@ def load_args(default_config=None):
         default="./train_logs",
         help="path to the directory in which to save the log file",
     )
+    parser.add_argument('--cuda', default=False, action='store_true', help='Use GPU')
 
     args = parser.parse_args()
     return args
@@ -207,10 +208,13 @@ def evaluate(model, dset_loader, criterion):
             audio_lengths,
             labels,
         ) in dset_loader:
+            video_input = video_input.unsqueeze(1).cuda() if args.cuda else video_input.unsqueeze(1)
+            audio_input = audio_input.unsqueeze(1).cuda() if args.cuda else audio_input.unsqueeze(1)
+            labels = labels.cuda() if args.cuda else labels
             logits = model(
-                video=video_input.unsqueeze(1),
+                video=video_input,
                 video_lengths=video_lengths,
-                audio=audio_input.unsqueeze(1),
+                audio=audio_input,
                 audio_lengths=audio_lengths,
             )
             _, preds = torch.max(F.softmax(logits, dim=1).data, dim=1)
@@ -257,14 +261,18 @@ def train(model, dset_loader, criterion, epoch, optimizer, logger):
 
         # --
         video_input, audio_input, labels_a, labels_b, lam = mixed_mixup_data(
-            video_input, audio_input, labels, args.alpha
+            video_input, audio_input, labels, args.alpha, use_cuda=args.cuda
         )
+        video_input = video_input.unsqueeze(1).cuda() if args.cuda else video_input.unsqueeze(1)
+        audio_input = audio_input.unsqueeze(1).cuda() if args.cuda else audio_input.unsqueeze(1)
+        if args.cuda:
+            labels_a, labels_b = labels_a.cuda(), labels_b.cuda()
 
         optimizer.zero_grad()
         logits = model(
-            video=video_input.unsqueeze(1),
+            video=video_input,
             video_lengths=video_lengths,
-            audio=audio_input.unsqueeze(1),
+            audio=audio_input,
             audio_lengths=audio_lengths,
         )
 
@@ -358,6 +366,8 @@ def main():
             return self.fc3(F.relu(self.fc2(F.relu(self.fc1(concat)))))
 
     model = MixedModel(video_model, audio_model, num_classes=args.num_classes)
+    if args.cuda:
+        model = model.cuda()
     # -- get dataset iterators
     dset_loaders = get_data_loaders(args)
     # -- get loss function
