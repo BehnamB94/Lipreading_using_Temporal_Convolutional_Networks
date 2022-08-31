@@ -7,10 +7,33 @@ import numpy as np
 import sys
 from lipreading.utils import read_txt_lines
 
+label_convert_dict = {
+    0: 0,
+    1: 1,
+    2: 2,
+    3: 3,
+    4: 15,
+    5: 4,
+    6: 5,
+    7: 6,
+    8: 7,
+    9: 8,
+    10: 9,
+    11: 12,
+    12: 10,
+    13: 4,
+    14: 11,
+    15: 12,
+    16: 15,
+    17: 15,
+    18: 13,
+    19: 14,
+    21: 15,
+}
 
 class MyDataset(object):
     def __init__(self, modality, data_partition, data_dir, label_fp, annonation_direc=None,
-        preprocessing_func=None, data_suffix='.npz'):
+        preprocessing_func=None, data_suffix='.npz', merge_classes=False):
         assert os.path.isfile( label_fp ), "File path provided for the labels does not exist. Path iput: {}".format(label_fp)
         self._data_partition = data_partition
         self._data_dir = data_dir
@@ -23,6 +46,7 @@ class MyDataset(object):
         self.fps = 25 if modality == "video" else 16000
         self.is_var_length = True
         self.label_idx = -3
+        self.merge_classes = merge_classes
 
         self.preprocessing_func = preprocessing_func
 
@@ -60,7 +84,12 @@ class MyDataset(object):
                 if not "visual_data" in video:
                     video, audio = audio, video
                 label = self._get_label_from_path(audio)
-                self.list[i] = video, audio, self._labels.index( label )
+                label_index = self._labels.index(label)
+                if self.merge_classes:
+                    if label == "tir":
+                        continue
+                    label_index = label_convert_dict[label_index]
+                self.list[i] = video, audio, label_index
                 self.instance_ids[i] = self._get_instance_id_from_path(audio)
                 i += 1
         else:
@@ -126,6 +155,7 @@ class MyDataset(object):
         return preprocess_data, label
 
     def __len__(self):
+        return 2
         return len(self.list)
 
 

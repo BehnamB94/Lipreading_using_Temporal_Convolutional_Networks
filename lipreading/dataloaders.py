@@ -62,7 +62,8 @@ def get_data_loaders(args):
                 label_fp=args.label_path,
                 annonation_direc=args.annonation_direc,
                 preprocessing_func=preprocessing[partition],
-                data_suffix='.npz'
+                data_suffix='.npz',
+                merge_classes=args.merge_classes,
                 ) for partition in ['train', 'val', 'test']}
     collate_fn = mixed_pad_packed_collate if args.modality == "mixed" else pad_packed_collate
     dset_loaders = {x: torch.utils.data.DataLoader(

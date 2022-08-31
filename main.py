@@ -74,6 +74,7 @@ def load_args(default_config=None):
     # paths
     parser.add_argument('--logging-dir', type=str, default='./train_logs', help = 'path to the directory in which to save the log file')
     parser.add_argument('--cuda', default=False, action='store_true', help='Use GPU')
+    parser.add_argument('--merge_classes', default=False, action='store_true')
 
     args = parser.parse_args()
     return args
