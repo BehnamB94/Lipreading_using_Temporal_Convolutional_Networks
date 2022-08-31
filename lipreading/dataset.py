@@ -155,7 +155,6 @@ class MyDataset(object):
         return preprocess_data, label
 
     def __len__(self):
-        return 2
         return len(self.list)
 
 
